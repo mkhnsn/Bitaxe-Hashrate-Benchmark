@@ -98,6 +98,14 @@ def parse_arguments():
              "  frequency (-f) settings to the Bitaxe and then exit."
     )
 
+    parser.add_argument(
+        '--max-temp',
+        type=int,
+        default=66,
+        help=f"{YELLOW}Maximum chip temperature in °C (default: 66).{RESET}\n"
+             "  The benchmark will stop if this temperature is exceeded."
+    )
+
     # If no arguments are provided, print help and exit
     if len(sys.argv) == 1:
         parser.print_help()
@@ -117,7 +125,7 @@ frequency_increment = 20
 sleep_time = 90               # Wait 90 seconds before starting the benchmark
 benchmark_time = 600          # 10 minutes benchmark time
 sample_interval = 15          # 15 seconds sample interval
-max_temp = 66                 # Will stop if temperature reaches or exceeds this value
+max_temp = args.max_temp      # Will stop if temperature reaches or exceeds this value
 max_allowed_voltage = 1400    # Maximum allowed core voltage
 max_allowed_frequency = 1200  # Maximum allowed core frequency
 max_vr_temp = 86              # Maximum allowed voltage regulator temperature
@@ -533,7 +541,7 @@ def reset_to_best_setting():
         print(GREEN + f"\nApplying Best Hashrate settings..." + RESET)
         set_system_settings(best_voltage, best_frequency)
     
-    restart_system()
+    # restart_system() is already called inside set_system_settings, so we don't need to call it again here.
 
 # --- Main execution logic ---
 if args.set_values:
