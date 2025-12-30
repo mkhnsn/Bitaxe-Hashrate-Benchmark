@@ -299,9 +299,10 @@ def set_system_settings(core_voltage, frequency):
         response.raise_for_status()  # Raise an exception for HTTP errors
         print(YELLOW + f"Applying settings: Voltage = {core_voltage}mV, Frequency = {frequency}MHz" + RESET)
         time.sleep(2)
-        restart_system()
+        return restart_system()
     except requests.exceptions.RequestException as e:
         print(RED + f"Error setting system settings: {e}" + RESET)
+        return False
 
 def restart_system():
     try:
@@ -314,13 +315,36 @@ def restart_system():
             print(YELLOW + f"Applying new settings and waiting {sleep_time}s for system stabilization..." + RESET)
             response = requests.post(f"{bitaxe_ip}/api/system/restart", timeout=10)
             response.raise_for_status()  # Raise an exception for HTTP errors
-            time.sleep(sleep_time)  # Allow sleep_time for the system to restart and start hashing
+            
+            # Monitor system during stabilization period
+            start_wait = time.time()
+            while time.time() - start_wait < sleep_time:
+                try:
+                    info = get_system_info()
+                    if info:
+                        temp = info.get("temp")
+                        power = info.get("power")
+                        
+                        if temp and temp >= max_temp:
+                            print(RED + f"CRITICAL: Chip temperature {temp}°C exceeded limit {max_temp}°C during stabilization!" + RESET)
+                            return False
+                            
+                        if power and power > max_power:
+                            print(RED + f"CRITICAL: Power {power}W exceeded limit {max_power}W during stabilization!" + RESET)
+                            return False
+                            
+                except Exception:
+                    pass # Ignore transient errors during restart
+                time.sleep(5)
         else:
             print(YELLOW + "Applying final settings..." + RESET)
             response = requests.post(f"{bitaxe_ip}/api/system/restart", timeout=10)
             response.raise_for_status()  # Raise an exception for HTTP errors
+        
+        return True
     except requests.exceptions.RequestException as e:
         print(RED + f"Error restarting the system: {e}" + RESET)
+        return False
 
 def benchmark_iteration(core_voltage, frequency):
     current_time = time.strftime("%H:%M:%S")
@@ -486,13 +510,27 @@ def reset_to_best_setting():
         print(YELLOW + "No valid benchmarking results found. Applying predefined default settings." + RESET)
         set_system_settings(default_voltage, default_frequency)
     else:
+        # Find best hashrate result
         best_result = sorted(results, key=lambda x: x["averageHashRate"], reverse=True)[0]
         best_voltage = best_result["coreVoltage"]
         best_frequency = best_result["frequency"]
 
-        print(GREEN + f"Applying the best settings from benchmarking:\n"
-                      f"  Core Voltage: {best_voltage}mV\n"
-                      f"  Frequency: {best_frequency}MHz" + RESET)
+        # Find most efficient result
+        efficient_result = sorted(results, key=lambda x: x["efficiencyJTH"], reverse=False)[0]
+        eff_voltage = efficient_result["coreVoltage"]
+        eff_frequency = efficient_result["frequency"]
+
+        print(GREEN + f"\n--- Benchmark Complete ---" + RESET)
+        print(GREEN + f"Best Hashrate Settings: {best_voltage}mV / {best_frequency}MHz ({best_result['averageHashRate']:.2f} GH/s)" + RESET)
+        print(GREEN + f"Most Efficient Settings: {eff_voltage}mV / {eff_frequency}MHz ({efficient_result['efficiencyJTH']:.2f} J/TH)" + RESET)
+        
+        print(YELLOW + f"\nWARNING: 'Best Hashrate' settings are often at the thermal/stability limit." + RESET)
+        print(YELLOW + f"Running these settings 24/7 may reduce hardware lifespan." + RESET)
+        print(YELLOW + f"Applying 'Most Efficient' settings is generally safer for long-term use." + RESET)
+        
+        # For now, we still default to applying the "Best Hashrate" settings as per original behavior,
+        # but we've added the warning.
+        print(GREEN + f"\nApplying Best Hashrate settings..." + RESET)
         set_system_settings(best_voltage, best_frequency)
     
     restart_system()
@@ -525,8 +563,19 @@ try:
     retry_upon_overheat = 0
     
     while current_voltage <= max_allowed_voltage and current_frequency <= max_allowed_frequency:
-        set_system_settings(current_voltage, current_frequency)
-        avg_hashrate, hashrate_stdev, avg_temp, efficiency_jth, hashrate_ok, avg_vr_temp, avg_power, avg_fan_speed, error_reason = benchmark_iteration(current_voltage, current_frequency)
+        if not set_system_settings(current_voltage, current_frequency):
+            # If stabilization failed (e.g. overheat during boot), treat as a failed iteration
+            avg_hashrate = None
+            hashrate_stdev = None
+            avg_temp = None
+            efficiency_jth = None
+            hashrate_ok = False
+            avg_vr_temp = None
+            avg_power = None
+            avg_fan_speed = None
+            error_reason = "STABILIZATION_FAILED"
+        else:
+            avg_hashrate, hashrate_stdev, avg_temp, efficiency_jth, hashrate_ok, avg_vr_temp, avg_power, avg_fan_speed, error_reason = benchmark_iteration(current_voltage, current_frequency)
         
         if avg_hashrate is not None and avg_temp is not None and efficiency_jth is not None:
             retry_upon_overheat = 0
