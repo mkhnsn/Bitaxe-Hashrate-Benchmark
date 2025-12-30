@@ -612,8 +612,14 @@ try:
                 # If hashrate is not good, go back one frequency step and increase voltage
                 if current_voltage + voltage_increment <= max_allowed_voltage:
                     current_voltage += voltage_increment
-                    current_frequency -= frequency_increment  # Go back to one frequency step and retry
-                    print(YELLOW + f"Hashrate too low compared to expected. Decreasing frequency to {current_frequency}MHz and increasing voltage to {current_voltage}mV" + RESET)
+                    
+                    # Decrease frequency but respect the minimum limit
+                    if current_frequency - frequency_increment >= min_allowed_frequency:
+                        current_frequency -= frequency_increment
+                    else:
+                        current_frequency = min_allowed_frequency
+                        
+                    print(YELLOW + f"Hashrate too low compared to expected. Adjusting to {current_frequency}MHz and increasing voltage to {current_voltage}mV" + RESET)
                 else:
                     print(YELLOW + "Reached max voltage without good results. Stopping further testing." + RESET)
                     break  # We've reached max voltage without good results
