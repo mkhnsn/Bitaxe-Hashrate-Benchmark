@@ -627,6 +627,13 @@ try:
             # If we hit thermal limits or other issues, we've found the highest safe settings
             # In case of max Chip Temperature reached, continue loop to next voltage with decreased frequency
             # Condition added to avoid successive overheat tries and reset to high initial frequency
+            
+            # CRITICAL SAFETY CHECK: If we overheated at the INITIAL frequency, do NOT increase voltage.
+            # Increasing voltage will only make it hotter. We should stop or decrease frequency.
+            if error_reason == "CHIP_TEMP_EXCEEDED" and current_frequency == initial_frequency:
+                print(RED + "Overheated at initial frequency! Cannot increase voltage safely. Stopping." + RESET)
+                break
+
             overheat_retry_allowed = (
                 error_reason == "CHIP_TEMP_EXCEEDED"
                 and retry_upon_overheat < 1
