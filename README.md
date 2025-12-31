@@ -5,10 +5,10 @@ A Python-based benchmarking tool for optimizing Bitaxe mining performance by tes
 ## **Features**
 
 * Automated benchmarking of different voltage/frequency combinations  
-* **Direct setting of specific voltage and frequency from command line**  
+* Direct setting of specific voltage and frequency from command line
 * Temperature monitoring and safety cutoffs  
-* **Power consumption monitoring and reporting (Watts)**  
-* **Fan speed monitoring and reporting (Percentage)**  
+* Power consumption monitoring and reporting (Watts)
+* Fan speed monitoring and reporting (Percentage)  
 * Power efficiency calculations (J/TH)  
 * Automatic saving of benchmark results  
 * Graceful shutdown with best settings retention  
@@ -125,7 +125,7 @@ The script includes several configurable parameters. These can be adjusted in th
 * Minimum required samples: 7 (for valid data processing)  
 * Voltage increment: 15mV  
 * Frequency increment: 20MHz  
-* **ASIC Configuration:** asic_count is hardcoded to 1 as it's not always provided by the API. small_core_count is fetched from the Bitaxe.
+* ASIC Configuration: asic_count is hardcoded to 1 as it's not always provided by the API. small_core_count is fetched from the Bitaxe.
 
 ## **Output**
 
@@ -139,8 +139,8 @@ The benchmark results are saved to bitaxe_benchmark_results_<ip_address>.json, c
   * Temperature readings (excluding initial warmup period)  
   * VR temperature readings (when available)  
   * Power efficiency metrics (J/TH)  
-  * **Average Power (Watts)**  
-  * **Average Fan Speed (Percentage or RPM, if available from API)**  
+  * Average Power (Watts)
+  * Average Fan Speed (Percentage or RPM, if available from API) 
   * Input voltage measurements  
   * Voltage/frequency combinations tested  
   * Error reason (if any) for a specific iteration
@@ -185,7 +185,7 @@ The tool implements several data processing techniques to ensure accurate result
 * Averages power consumption across entire test period  
 * Monitors VR temperature when available  
 * Calculates efficiency in Joules per Terahash (J/TH)  
-* **Averages fan speed across entire test period**
+* Averages fan speed across entire test period
 
 ## **Contributing**
 
