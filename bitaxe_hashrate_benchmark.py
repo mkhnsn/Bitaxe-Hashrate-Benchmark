@@ -8,10 +8,6 @@ import statistics
 from datetime import datetime
 START_TIME = datetime.now().strftime("%Y-%m-%d_%H")
 
-
-if 'START_TIME' not in globals():
-    START_TIME = datetime.now().strftime("%Y-%m-%d_%H")
-
 # Enable ansi escape characters in terminal - colors were not working in Windows terminal
 import os
 try:
@@ -75,18 +71,18 @@ def parse_arguments():
     parser.add_argument(
         '-v', '--voltage',
         type=int,
-        default=1150, # Default value for benchmark start or target setting
+        default=None, # Default is None to allow validation logic
         help=f"{YELLOW}Core voltage in mV.{RESET}\n"
-             "  For benchmark mode: The starting voltage for testing.\n"
-             "  For --set-values mode: The exact voltage to apply."
+             "  For benchmark mode: The starting voltage for testing (default: 1150).\n"
+             "  For --set-values mode: The exact voltage to apply (Required)."
     )
     parser.add_argument(
         '-f', '--frequency',
         type=int,
-        default=500, # Default value for benchmark start or target setting
+        default=None, # Default is None to allow validation logic
         help=f"{YELLOW}Core frequency in MHz.{RESET}\n"
-             "  For benchmark mode: The starting frequency for testing.\n"
-             "  For --set-values mode: The exact frequency to apply."
+             "  For benchmark mode: The starting frequency for testing (default: 500).\n"
+             "  For --set-values mode: The exact frequency to apply (Required)."
     )
 
     # New argument for setting values only
@@ -115,9 +111,25 @@ def parse_arguments():
 
 # Replace the configuration section
 args = parse_arguments()
+
+# Validation for bitaxe_ip
+if args.bitaxe_ip is None:
+    print(RED + "Error: Bitaxe IP address is required." + RESET)
+    sys.exit(1)
+
 bitaxe_ip = f"http://{args.bitaxe_ip}"
-initial_voltage = args.voltage
-initial_frequency = args.frequency
+
+# Logic for voltage and frequency defaults/requirements
+if args.set_values:
+    if args.voltage is None or args.frequency is None:
+        print(RED + "Error: --set-values mode requires both -v/--voltage and -f/--frequency." + RESET)
+        sys.exit(1)
+    initial_voltage = args.voltage
+    initial_frequency = args.frequency
+else:
+    # Benchmark mode defaults
+    initial_voltage = args.voltage if args.voltage is not None else 1150
+    initial_frequency = args.frequency if args.frequency is not None else 500
 
 # Configuration
 voltage_increment = 15
@@ -533,17 +545,17 @@ def reset_to_best_setting():
         eff_voltage = efficient_result["coreVoltage"]
         eff_frequency = efficient_result["frequency"]
 
-        print(GREEN + f"\n--- Benchmark Complete ---" + RESET)
+        print(GREEN + "\n--- Benchmark Complete ---" + RESET)
         print(GREEN + f"Best Hashrate Settings: {best_voltage}mV / {best_frequency}MHz ({best_result['averageHashRate']:.2f} GH/s)" + RESET)
         print(GREEN + f"Most Efficient Settings: {eff_voltage}mV / {eff_frequency}MHz ({efficient_result['efficiencyJTH']:.2f} J/TH)" + RESET)
         
-        print(YELLOW + f"\nWARNING: 'Best Hashrate' settings are often at the thermal/stability limit." + RESET)
-        print(YELLOW + f"Running these settings 24/7 may reduce hardware lifespan." + RESET)
-        print(YELLOW + f"Applying 'Most Efficient' settings is generally safer for long-term use." + RESET)
+        print(YELLOW + "\nWARNING: 'Best Hashrate' settings are often at the thermal/stability limit." + RESET)
+        print(YELLOW + "Running these settings 24/7 may reduce hardware lifespan." + RESET)
+        print(YELLOW + "Applying 'Most Efficient' settings is generally safer for long-term use." + RESET)
         
         # For now, we still default to applying the "Best Hashrate" settings as per original behavior,
         # but we've added the warning.
-        print(GREEN + f"\nApplying Best Hashrate settings..." + RESET)
+        print(GREEN + "\nApplying Best Hashrate settings..." + RESET)
         set_system_settings(best_voltage, best_frequency)
     
     # restart_system() is already called inside set_system_settings, so we don't need to call it again here.
@@ -554,10 +566,12 @@ if args.set_values:
     print(GREEN + f"Applying Core Voltage: {initial_voltage}mV, Frequency: {initial_frequency}MHz to Bitaxe." + RESET)
     
     # Call the existing set_system_settings function
-    set_system_settings(initial_voltage, initial_frequency)
-    
-    print(GREEN + "Settings applied. Check your Bitaxe web interface to confirm." + RESET)
-    sys.exit(0) # Exit the script after applying settings
+    if set_system_settings(initial_voltage, initial_frequency):
+        print(GREEN + "Settings applied. Check your Bitaxe web interface to confirm." + RESET)
+        sys.exit(0)
+    else:
+        print(RED + "Failed to apply settings or stabilization failed. Check your Bitaxe." + RESET)
+        sys.exit(1)
 
 # Main benchmarking process
 try:
@@ -768,24 +782,4 @@ finally:
         else:
             print(RED + "No valid results were found during benchmarking." + RESET)
 
-# Add this new function to handle cleanup
-def cleanup_and_exit(reason=None):
-    global system_reset_done
-    if system_reset_done:
-        return
-        
-    try:
-        if results:
-            reset_to_best_setting()
-            save_results()
-            print(GREEN + "Bitaxe reset to best settings and results saved." + RESET)
-        else:
-            print(YELLOW + "No valid benchmarking results found. Applying predefined default settings." + RESET)
-            set_system_settings(default_voltage, default_frequency)
-    finally:
-        system_reset_done = True
-        if reason:
-            print(RED + f"Benchmarking stopped: {reason}" + RESET)
-        print(GREEN + "Benchmarking completed." + RESET)
-        sys.exit(0)
 

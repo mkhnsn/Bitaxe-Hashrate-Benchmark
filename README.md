@@ -8,7 +8,7 @@ A Python-based benchmarking tool for optimizing Bitaxe mining performance by tes
 * **Direct setting of specific voltage and frequency from command line**  
 * Temperature monitoring and safety cutoffs  
 * **Power consumption monitoring and reporting (Watts)**  
-* **Fan speed monitoring and reporting (RPM/Percentage)**  
+* **Fan speed monitoring and reporting (Percentage)**  
 * Power efficiency calculations (J/TH)  
 * Automatic saving of benchmark results  
 * Graceful shutdown with best settings retention  
