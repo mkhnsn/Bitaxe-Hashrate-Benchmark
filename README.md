@@ -91,17 +91,18 @@ python bitaxe_hashrate_benchmark.py 192.168.1.136 --set-values -v 1150 -f 780
 
 ### **Docker Usage (Optional)**
 
-Run the container with your Bitaxe's IP address (add --set-values for that mode):  
+Run the container with your Bitaxe's IP address (add --set-values for that mode).
+Benchmark results are written to `/results` inside the container — use `-v` to mount a host directory so the results persist after the container exits:
 ```bash
-docker run --rm bitaxe-benchmark <bitaxe_ip> [options]
+docker run --rm -v $(pwd)/results:/results bitaxe-benchmark <bitaxe_ip> [options]
 ```
 
-Example (Full Benchmark):  
+Example (Full Benchmark):
 ```bash
-docker run --rm bitaxe-benchmark 192.168.2.26 -v 1200 -f 550
+docker run --rm -v $(pwd)/results:/results bitaxe-benchmark 192.168.2.26 -v 1200 -f 550
 ```
 
-Example (Set Settings Only):  
+Example (Set Settings Only):
 ```bash
 docker run --rm bitaxe-benchmark 192.168.2.26 --set-values -v 1150 -f 780
 ```

@@ -16,5 +16,9 @@ COPY bitaxe_hashrate_benchmark.py .
 # Ensure Python output is sent straight to the container logs without buffering
 ENV PYTHONUNBUFFERED=1
 
+# Default output directory for benchmark results
+RUN mkdir -p /results
+VOLUME /results
+
 # Set the entrypoint
-ENTRYPOINT ["python", "bitaxe_hashrate_benchmark.py"]
+ENTRYPOINT ["python", "bitaxe_hashrate_benchmark.py", "--output-dir", "/results"]

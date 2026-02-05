@@ -102,6 +102,14 @@ def parse_arguments():
              "  The benchmark will stop if this temperature is exceeded."
     )
 
+    parser.add_argument(
+        '-o', '--output-dir',
+        type=str,
+        default='.',
+        help=f"{YELLOW}Directory to save benchmark results to.{RESET}\n"
+             "  Useful for Docker volume mounts (default: current directory)."
+    )
+
     # If no arguments are provided, print help and exit
     if len(sys.argv) == 1:
         parser.print_help()
@@ -118,6 +126,9 @@ if args.bitaxe_ip is None:
     sys.exit(1)
 
 bitaxe_ip = f"http://{args.bitaxe_ip}"
+
+# Create output directory if it doesn't exist
+os.makedirs(args.output_dir, exist_ok=True)
 
 # Logic for voltage and frequency defaults/requirements
 if args.set_values:
@@ -182,7 +193,8 @@ if initial_frequency != 500:
 def result_filename():
     # Extract IP from bitaxe_ip global variable and remove 'http://'
     ip_address = bitaxe_ip.replace('http://', '')
-    return f"bitaxe_benchmark_results_{ip_address}_{timestamp}{file_suffix}.json"
+    name = f"bitaxe_benchmark_results_{ip_address}_{timestamp}{file_suffix}.json"
+    return os.path.join(args.output_dir, name)
 
 # Results storage
 results = []
