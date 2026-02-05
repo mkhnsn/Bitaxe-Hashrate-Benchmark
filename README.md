@@ -130,7 +130,7 @@ The script includes several configurable parameters. These can be adjusted in th
 
 ## **Output**
 
-The benchmark results are saved to bitaxe_benchmark_results_<ip_address>.json, containing:
+The benchmark results are saved to `bitaxe_benchmark_results_<ip_address>_<timestamp>.json`, containing:
 
 * Complete test results for all combinations  
 * Top 5 performing configurations ranked by hashrate  

@@ -51,11 +51,11 @@ def parse_arguments():
         epilog=
         f"{YELLOW}Examples:{RESET}\n"
         f"  {YELLOW}1. Run a full benchmark (starting at 1150mV, 500MHz):{RESET}\n"
-        f"     {GREEN}python bitaxe_hasrate_benchmark.py 192.168.1.136 -v 1150 -f 500{RESET}\n\n"
+        f"     {GREEN}python bitaxe_hashrate_benchmark.py 192.168.1.136 -v 1150 -f 500{RESET}\n\n"
         f"  {YELLOW}2. Apply specific settings (1150mV, 780MHz) and exit:{RESET}\n"
-        f"     {GREEN}python bitaxe_hasrate_benchmark.py 192.168.1.136 --set-values -v 1150 -f 780{RESET}\n\n"
+        f"     {GREEN}python bitaxe_hashrate_benchmark.py 192.168.1.136 --set-values -v 1150 -f 780{RESET}\n\n"
         f"  {YELLOW}3. Get help (this message):{RESET}\n"
-        f"     {GREEN}python bitaxe_hasrate_benchmark.py --help{RESET}",
+        f"     {GREEN}python bitaxe_hashrate_benchmark.py --help{RESET}",
         formatter_class=RawTextAndDefaultsHelpFormatter # <--- USE THE CUSTOM FORMATTER
     )
 
@@ -350,28 +350,38 @@ def restart_system():
             
             # Monitor system during stabilization period
             start_wait = time.time()
+            consecutive_failures = 0
             while time.time() - start_wait < sleep_time:
                 try:
                     info = get_system_info()
-                    if info:
-                        temp = info.get("temp")
-                        power = info.get("power")
-                        vr_temp = info.get("vrTemp")
-                        
-                        if temp and temp >= max_temp:
-                            print(RED + f"CRITICAL: Chip temperature {temp}°C exceeded limit {max_temp}°C during stabilization!" + RESET)
+                    if not info:
+                        consecutive_failures += 1
+                        if consecutive_failures >= 3:
+                            print(RED + "Failed to read system info during stabilization; aborting." + RESET)
                             return False
+                        time.sleep(5)
+                        continue
 
-                        if vr_temp and vr_temp >= max_vr_temp:
-                            print(RED + f"CRITICAL: VR temperature {vr_temp}°C exceeded limit {max_vr_temp}°C during stabilization!" + RESET)
-                            return False
-                            
-                        if power and power > max_power:
-                            print(RED + f"CRITICAL: Power {power}W exceeded limit {max_power}W during stabilization!" + RESET)
-                            return False
-                            
-                except Exception:
-                    pass # Ignore transient errors during restart
+                    consecutive_failures = 0
+                    temp = info.get("temp")
+                    power = info.get("power")
+                    vr_temp = info.get("vrTemp")
+
+                    if temp and temp >= max_temp:
+                        print(RED + f"CRITICAL: Chip temperature {temp}°C exceeded limit {max_temp}°C during stabilization!" + RESET)
+                        return False
+                    if vr_temp and vr_temp >= max_vr_temp:
+                        print(RED + f"CRITICAL: VR temperature {vr_temp}°C exceeded limit {max_vr_temp}°C during stabilization!" + RESET)
+                        return False
+                    if power and power > max_power:
+                        print(RED + f"CRITICAL: Power {power}W exceeded limit {max_power}W during stabilization!" + RESET)
+                        return False
+
+                except Exception as exc:
+                    consecutive_failures += 1
+                    if consecutive_failures >= 3:
+                        print(RED + f"Error reading system info during stabilization: {exc}" + RESET)
+                        return False
                 time.sleep(5)
         else:
             print(YELLOW + "Applying final settings..." + RESET)
