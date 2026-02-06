@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { apiUrl } from './api';
 import { useWebSocket } from './hooks/useWebSocket';
 import { BenchmarkControls } from './components/BenchmarkControls';
 import { ConfigEditor } from './components/ConfigEditor';
@@ -95,7 +96,7 @@ function App() {
 
   // Fetch initial config
   useEffect(() => {
-    fetch('/api/config')
+    fetch(apiUrl('/api/config'))
       .then((res) => res.json())
       .then((data) => setConfig(data))
       .catch(console.error);
@@ -103,13 +104,13 @@ function App() {
 
   // Fetch initial status and restore results if benchmark is active/completed
   useEffect(() => {
-    fetch('/api/benchmark/status')
+    fetch(apiUrl('/api/benchmark/status'))
       .then((res) => res.json())
       .then((data) => {
         setState(data.state);
         // If not idle, restore accumulated results from the backend
         if (data.state !== 'idle') {
-          fetch('/api/results/export/current')
+          fetch(apiUrl('/api/results/export/current'))
             .then((res) => res.ok ? res.json() : null)
             .then((data) => {
               if (data?.all_results?.length) {
@@ -123,7 +124,7 @@ function App() {
   }, []);
 
   const handleSaveConfig = async (newConfig: BenchmarkConfig) => {
-    const res = await fetch('/api/config', {
+    const res = await fetch(apiUrl('/api/config'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newConfig),
@@ -149,7 +150,7 @@ function App() {
     setRefineRange(null);
     setVoltageStep(null);
 
-    const res = await fetch('/api/benchmark/start', {
+    const res = await fetch(apiUrl('/api/benchmark/start'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -169,7 +170,7 @@ function App() {
   };
 
   const handleStop = async () => {
-    const res = await fetch('/api/benchmark/stop', { method: 'POST' });
+    const res = await fetch(apiUrl('/api/benchmark/stop'), { method: 'POST' });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || 'Failed to stop benchmark');
@@ -177,7 +178,7 @@ function App() {
   };
 
   const handlePause = async () => {
-    const res = await fetch('/api/benchmark/pause', { method: 'POST' });
+    const res = await fetch(apiUrl('/api/benchmark/pause'), { method: 'POST' });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || 'Failed to pause benchmark');
@@ -185,7 +186,7 @@ function App() {
   };
 
   const handleResume = async () => {
-    const res = await fetch('/api/benchmark/resume', { method: 'POST' });
+    const res = await fetch(apiUrl('/api/benchmark/resume'), { method: 'POST' });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || 'Failed to resume benchmark');
@@ -193,7 +194,7 @@ function App() {
   };
 
   const handleReset = async () => {
-    const res = await fetch('/api/benchmark/reset', { method: 'POST' });
+    const res = await fetch(apiUrl('/api/benchmark/reset'), { method: 'POST' });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || 'Failed to reset benchmark');
@@ -229,7 +230,7 @@ function App() {
   };
 
   const handleExport = async () => {
-    const res = await fetch('/api/results/export/current');
+    const res = await fetch(apiUrl('/api/results/export/current'));
     if (!res.ok) {
       throw new Error('Failed to export results');
     }
@@ -247,7 +248,7 @@ function App() {
   const handleImport = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch('/api/results/import', {
+    const res = await fetch(apiUrl('/api/results/import'), {
       method: 'POST',
       body: formData,
     });

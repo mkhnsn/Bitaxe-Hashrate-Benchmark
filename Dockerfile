@@ -12,6 +12,11 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
+# BASE_PATH sets the subpath prefix (e.g. "/bitaxe" for reverse proxy).
+# Defaults to "/" for root-level deployments.
+ARG BASE_PATH=/
+ENV BASE_PATH=${BASE_PATH}
+
 # Build the frontend
 RUN npm run build
 
