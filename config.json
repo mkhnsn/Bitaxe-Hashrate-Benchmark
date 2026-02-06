@@ -1,0 +1,28 @@
+{
+  "timing": {
+    "sleep_time": 90,
+    "benchmark_time": 600,
+    "sample_interval": 15
+  },
+  "safety": {
+    "max_temp": 66,
+    "max_vr_temp": 86,
+    "max_power": 30,
+    "max_allowed_voltage": 1400,
+    "min_allowed_voltage": 1000,
+    "max_allowed_frequency": 1200,
+    "min_allowed_frequency": 400,
+    "min_input_voltage": 4800,
+    "max_input_voltage": 5500
+  },
+  "increments": {
+    "voltage_increment": 15,
+    "frequency_increment": 20
+  },
+  "analysis": {
+    "hashrate_tolerance": 0.94,
+    "trim_outliers": 3,
+    "warmup_samples": 6,
+    "min_samples": 7
+  }
+}
