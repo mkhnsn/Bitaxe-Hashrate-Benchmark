@@ -11,12 +11,15 @@ services:
       - results:/results
       - config:/config
     networks:
-      - proxy
+      - caddy
+    labels:
+      caddy: http://bitaxe-benchmark.echo.internal
+      caddy.reverse_proxy: "{{upstreams 8000}}"
 
 volumes:
   results:
   config:
 
 networks:
-  proxy:
+  caddy:
     external: true

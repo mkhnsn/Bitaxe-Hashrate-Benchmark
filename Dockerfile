@@ -46,6 +46,8 @@ VOLUME /config
 ENV PYTHONUNBUFFERED=1
 ENV RESULTS_DIR=/results
 ENV CONFIG_DIR=/config
+ARG BASE_PATH=/
+ENV BASE_PATH=${BASE_PATH}
 
 # Expose the web server port
 EXPOSE 8000

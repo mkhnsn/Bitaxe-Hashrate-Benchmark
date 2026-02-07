@@ -29,6 +29,7 @@ STATIC_DIR = Path(__file__).parent / "static"
 RESULTS_DIR = Path(os.environ.get("RESULTS_DIR", PACKAGE_DIR / "results"))
 CONFIG_DIR = Path(os.environ.get("CONFIG_DIR", PACKAGE_DIR))
 CONFIG_PATH = CONFIG_DIR / "config.json"
+BASE_PATH = os.environ.get("BASE_PATH", "").rstrip("/")
 
 
 def _load_or_create_config() -> BenchmarkConfig:
@@ -539,3 +540,24 @@ if STATIC_DIR.exists():
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
         return FileResponse(STATIC_DIR / "index.html")
+
+
+# Strip BASE_PATH prefix from incoming requests so routes don't need it.
+if BASE_PATH:
+    _inner = app
+
+    class _StripBasePath:
+        """ASGI middleware to strip BASE_PATH prefix from request paths."""
+
+        def __init__(self, asgi_app, prefix: str):
+            self.app = asgi_app
+            self.prefix = prefix
+
+        async def __call__(self, scope, receive, send):
+            if scope["type"] in ("http", "websocket"):
+                path = scope.get("path", "")
+                if path.startswith(self.prefix):
+                    scope = dict(scope, path=path[len(self.prefix) :] or "/")
+            await self.app(scope, receive, send)
+
+    app = _StripBasePath(_inner, BASE_PATH)
